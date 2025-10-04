@@ -11,7 +11,9 @@ from datetime import datetime
 import requests
 
 logger = logging.getLogger(__name__)
-
+# Define the dataset short name for TEMPO NO2 Level 2 data
+TEMPO_NO2_SHORT_NAME = "TEMPO_NO2_L2"
+DOWNLOAD_DIR = "tempo_data_downloads"
 
 class TEMPOFetcher:
     """
@@ -23,17 +25,20 @@ class TEMPOFetcher:
     Attributes:
         api_key (str): NASA Earthdata API key
         base_url (str): Base URL for TEMPO data API
+        auth (earthaccess.auth.Auth): earthaccess authentication object.
+
     """
     
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str) -> None:  # api_key is unused in earthaccess, but kept for signature
         """
         Initialize TEMPOFetcher
         
         Args:
-            api_key: NASA Earthdata API key
+            api_key: NASA Earthdata API key (unused when earthaccess is used)
         """
-        self.api_key = api_key
-        self.base_url = "https://earthdata.nasa.gov/tempo"
+        # self.api_key = api_key
+        # self.base_url = "https://earthdata.nasa.gov/tempo"
+        self.auth = earthaccess.login()
         logger.info(f"Initialized {self.__class__.__name__}")
     
     def fetch_data(
