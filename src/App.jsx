@@ -8,16 +8,15 @@ import {
   FiLoader,
   FiCloud,
   FiRefreshCcw,
-  FiMap,
   FiActivity,
   FiSearch,
 } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Configuration - UPDATE THESE FOR PRODUCTION
+// UPDATE THESE FOR PRODUCTION
 const CONFIG = {
-  API_BASE: "http://localhost:8000/api", // BACKEND: Update this to your backend API URL
+  API_BASE: "http://localhost:8000/api",
   APP_NAME: "Predictors",
   MAX_AQI_THRESHOLD: 200,
   GEOLOCATION_TIMEOUT: 8000,
