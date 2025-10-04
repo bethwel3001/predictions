@@ -31,7 +31,7 @@ class TEMPOFetcher:
 
     """
     
-    def __init__(self, api_key: str) -> None:  # api_key is unused in earthaccess, but kept for signature
+    def __init__(self, username: Optional[str] = None, password: Optional[str] = None) -> None:  # api_key is unused in earthaccess, but kept for signature
         """
         Initialize TEMPOFetcher
         

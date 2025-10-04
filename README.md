@@ -29,7 +29,11 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # 3. Install dependencies
 uv pip install fastapi uvicorn requests pyyaml pydantic pydantic-settings python-multipart python-dotenv
 
-# 4. Start the backend server
+# 4. Add envrionment variables
+EARTHDATA_USERNAME="your_username"
+EARTHDATA_PASSWORD="your_password"
+
+# 5. Start the backend server
 cd backend
 python3 src/api/main.py
 ```
@@ -140,7 +144,11 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
 # Run Python tests
-pytest tests/
+pytest tests/ 
+
+#OR
+# Make sure you are in the 'predictions/' directory
+python -m pytest -v tests/test_tempo_fetcher.py #for temp_fetcher
 
 # Run with coverage
 pytest --cov=src tests/
