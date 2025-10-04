@@ -1,55 +1,109 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   FiMapPin,
-  FiAlertTriangle,
+  FiBell,
   FiAlertCircle,
   FiLoader,
   FiCloud,
   FiRefreshCcw,
 } from "react-icons/fi";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   const [location, setLocation] = useState("");
   const [aqiData, setAqiData] = useState(null);
+  const [nearbyAreas, setNearbyAreas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [notification, setNotification] = useState("");
+  const [severe, setSevere] = useState(false);
+  const [autoDetected, setAutoDetected] = useState(false);
 
-  // FAST API BACKEND URL
-  const API_URL = `http://localhost:8000/api/airquality?city=${location}`;
+  const API_BASE = "http://localhost:8000/api";
 
-  // Fetch data (for both load and refresh)
-  const fetchData = async (isRefresh = false) => {
+  // Detect location on load
+  useEffect(() => {
+    detectLocation();
+  }, []);
+
+  const detectLocation = async () => {
+    setLoading(true);
+    setError("");
     try {
-      if (!location.trim()) {
-        setError("Please enter a valid city before loading data.");
-        setAqiData(null);
-        return;
-      }
+      if (!navigator.geolocation) throw new Error("Geolocation not supported");
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setAutoDetected(true);
+          fetchDataByCoords(latitude, longitude);
+        },
+        () => {
+          setError("Unable to detect location. Please enter your city manually.");
+          setLoading(false);
+        },
+        { timeout: 8000 }
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Failed to get your location. Please try again.");
+      setLoading(false);
+    }
+  };
 
-      setError("");
-      setNotification("");
-      setAqiData(null);
-      isRefresh ? setRefreshing(true) : setLoading(true);
-
-      // Simulate network latency for demo clarity
-      await new Promise((res) => setTimeout(res, 1500));
-
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error("Failed to fetch air quality data");
-
-      const data = await response.json();
+  const fetchDataByCoords = async (lat, lon) => {
+    try {
+      const { data } = await axios.get(`${API_BASE}/airquality`, {
+        params: { lat, lon },
+      });
       setAqiData(data);
 
-      if (data.aqi > 100) {
-        setNotification("⚠️ Air quality is unhealthy. Avoid outdoor exposure.");
+      if (data.aqi > 200) {
+        setSevere(true);
+        toast.error("⚠️ Air quality is dangerously poor in your area!");
+      } else {
+        setSevere(false);
+      }
+
+      // Fetch nearby areas
+      const nearby = await axios.get(`${API_BASE}/nearby`, {
+        params: { lat, lon },
+      });
+      setNearbyAreas(nearby.data);
+    } catch (err) {
+      setError("Error fetching air quality data.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDataByCity = async (isRefresh = false) => {
+    if (!location.trim()) {
+      setError("Please enter a valid city before loading data.");
+      return;
+    }
+
+    setError("");
+    isRefresh ? setRefreshing(true) : setLoading(true);
+
+    try {
+      const { data } = await axios.get(`${API_BASE}/airquality`, {
+        params: { city: location },
+      });
+      setAqiData(data);
+      setNearbyAreas([]);
+
+      if (data.aqi > 200) {
+        setSevere(true);
+        toast.error("⚠️ Extremely poor air quality in this region!");
+      } else {
+        setSevere(false);
       }
     } catch (err) {
       console.error(err);
-      setError(
-        "Oh no! Something went wrong while fetching air quality data. Please try again."
-      );
+      setError("Failed to fetch data for the selected city.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -67,14 +121,36 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800">
-      {/* Header */}
-      <header className="w-full max-w-6xl mx-auto mt-8 px-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <ToastContainer position="top-center" />
+
+      {/* HEADER */}
+      <header className="w-full max-w-6xl mx-auto mt-6 px-4 flex flex-col md:flex-row items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Air Quality Insights</h1>
-          <p className="text-sm text-gray-500">Powered by NASA TEMPO Data</p>
+          <p className="text-sm text-gray-500">
+            Powered by NASA TEMPO Data {autoDetected && "(auto-detected)"}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Notification Icon */}
+          <div className="relative">
+            <FiBell
+              className={`text-2xl cursor-pointer ${
+                severe
+                  ? "text-red-500 animate-pulse"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+              onClick={() =>
+                toast.info(
+                  severe
+                    ? "AQI Alert: Air quality is hazardous. Stay indoors!"
+                    : "No active alerts at the moment."
+                )
+              }
+            />
+          </div>
+
           <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-white">
             <FiMapPin className="text-gray-500 text-lg mr-2" />
             <input
@@ -87,7 +163,7 @@ function App() {
           </div>
 
           <button
-            onClick={() => fetchData(false)}
+            onClick={() => fetchDataByCity(false)}
             className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition"
             disabled={loading || refreshing}
           >
@@ -101,7 +177,7 @@ function App() {
           </button>
 
           <button
-            onClick={() => fetchData(true)}
+            onClick={() => fetchDataByCity(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
             disabled={loading || refreshing}
           >
@@ -116,44 +192,35 @@ function App() {
         </div>
       </header>
 
-      {/* Notification */}
-      {notification && (
-        <div className="w-full max-w-6xl mx-auto mt-6 px-4">
-          <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-2">
-            <FiAlertTriangle />
-            <p className="text-sm">{notification}</p>
-          </div>
-        </div>
-      )}
-
       {/* MAIN CONTENT */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 flex items-center justify-center">
-        {/* Error State */}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 flex flex-col items-center justify-center">
+        {/* ERROR */}
         {error && (
           <div className="text-center flex flex-col items-center gap-4">
             <FiAlertCircle className="text-6xl text-red-500 animate-bounce" />
             <p className="text-lg font-medium text-red-600">{error}</p>
-            <p className="text-sm text-gray-500">
-              Try checking your internet connection or backend API.
-            </p>
+            <button
+              onClick={detectLocation}
+              className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600"
+            >
+              Retry Detect Location
+            </button>
           </div>
         )}
 
-        {/* Loading / Refreshing State */}
-        {(loading || refreshing) && (
-          <div className="text-center flex flex-col items-center gap-4">
+        {/* LOADING */}
+        {loading && (
+          <div className="text-center flex flex-col items-center gap-3">
             <FiLoader className="text-5xl text-blue-500 animate-spin" />
-            <p className="text-lg font-medium">
-              {loading ? "Loading air quality data..." : "Refreshing data..."}
-            </p>
+            <p className="text-lg font-medium">Fetching Air Quality Data...</p>
             <p className="text-sm text-gray-500">
               Please wait while we contact NASA TEMPO servers.
             </p>
           </div>
         )}
 
-        {/* Empty State */}
-        {!aqiData && !loading && !refreshing && !error && (
+        {/* DEFAULT STATE */}
+        {!loading && !aqiData && !error && (
           <div className="text-center flex flex-col items-center gap-3 text-gray-500">
             <FiCloud className="text-6xl text-blue-300 animate-pulse" />
             <p className="text-sm">
@@ -162,10 +229,10 @@ function App() {
           </div>
         )}
 
-        {/* Data Display */}
-        {aqiData && !loading && !refreshing && !error && (
+        {/* DATA */}
+        {aqiData && !loading && !error && (
           <div className="w-full flex flex-col gap-8">
-            {/* Summary */}
+            {/* AQI Summary */}
             <section className="bg-white rounded-2xl shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
                 <h2 className="text-lg font-semibold">{aqiData.city}</h2>
@@ -194,29 +261,27 @@ function App() {
               </div>
             </section>
 
-            {/* Pollutants */}
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {aqiData.pollutants.map((item) => (
-                <div
-                  key={item.name}
-                  className="bg-white rounded-xl shadow-sm p-4 text-center"
-                >
-                  <p className="text-sm text-gray-500">{item.name}</p>
-                  <p className="text-lg font-semibold">{item.value} µg/m³</p>
-                </div>
-              ))}
+            {/* Recommendation */}
+            <section
+              className={`rounded-2xl shadow-sm p-6 text-center text-white ${
+                aqiData.aqi <= 100 ? "bg-green-500" : "bg-red-500"
+              }`}
+            >
+              {aqiData.aqi <= 100
+                ? "✅ Safe for outdoor activities. Take a walk!"
+                : "🚫 Air quality is poor. Avoid outdoor exposure."}
             </section>
 
-            {/* Forecast */}
+            {/* 5-hour Graph */}
             <section className="bg-white rounded-2xl shadow-sm p-6">
               <h3 className="font-medium mb-4 text-gray-700">
-                Forecast (next 24h)
+                AQI Trend (past 5 hours)
               </h3>
               <div className="w-full h-40 flex items-end justify-between gap-2">
-                {aqiData.forecast.map((val, idx) => (
+                {aqiData.recent.map((val, idx) => (
                   <div
                     key={idx}
-                    className={`flex-1 rounded-t-lg transition-all duration-300 ${
+                    className={`flex-1 rounded-t-lg ${
                       val > 100 ? "bg-red-400" : "bg-green-400"
                     }`}
                     style={{ height: `${(val / 200) * 100}%` }}
@@ -225,18 +290,40 @@ function App() {
               </div>
             </section>
 
-            {/* Health Advice */}
-            <section className="bg-white rounded-2xl shadow-sm p-6">
-              <h3 className="font-medium mb-2 text-gray-700">Health Advisory</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {aqiData.health_advice}
-              </p>
-            </section>
+            {/* Nearby Areas */}
+            {nearbyAreas.length > 0 && (
+              <section>
+                <h3 className="font-medium mb-4 text-gray-700">
+                  Nearby Areas
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {nearbyAreas.map((area) => (
+                    <div
+                      key={area.name}
+                      className={`p-4 rounded-xl shadow-sm text-center ${
+                        area.safe ? "bg-green-100" : "bg-red-100"
+                      }`}
+                    >
+                      <h4 className="font-medium text-gray-700">
+                        {area.name}
+                      </h4>
+                      <p
+                        className={`text-sm ${
+                          area.safe ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {area.safe ? "Safe" : "Unsafe"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <footer className="w-full mt-auto py-4 bg-white border-t border-gray-200 text-center text-xs text-gray-400">
         © 2025 Air Quality Insights — NASA Space Apps Challenge
       </footer>
