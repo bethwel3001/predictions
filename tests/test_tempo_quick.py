@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Quick test script for TEMPO fetcher
-This will test your NASA Earthdata credentials and fetch a small amount of TEMPO data
+This will test  NASA Earthdata credentials and fetch a small amount of TEMPO data
 """
 
 import os
