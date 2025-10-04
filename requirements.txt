@@ -1,0 +1,18 @@
+# Core API Dependencies (Lightweight for quick start)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0.post1
+python-multipart==0.0.6
+
+# Configuration & Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# API & HTTP
+requests==2.31.0
+
+# Development Tools
+pytest==7.4.3
+
+# Note: Run 'pip install -r requirements.txt' for full ML & database dependencies
