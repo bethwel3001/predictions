@@ -39,7 +39,7 @@ def fetcher_instance():
         pw = os.getenv("EARTHDATA_PASSWORD")
 
         if not user or not pw:
-             pytest.fail("EARTHDATA_USERNAME or EARTHDATA_PASSWORD not found in environment. Check your .env file.")
+            pytest.fail("EARTHDATA_USERNAME or EARTHDATA_PASSWORD not found in environment. Check your .env file.")
 
         # Instantiate TEMPOFetcher. It will use the env vars implicitly.
         fetcher = TEMPOFetcher(username=user, password=pw)
