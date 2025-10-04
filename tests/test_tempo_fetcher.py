@@ -149,7 +149,7 @@ def test_fetch_data_multiple_constituents(fetcher_instance: TEMPOFetcher):
     if o3_files:
         print(f"Downloaded {len(o3_files)} O3 files.")
     if ch2o_files:
-         print(f"Downloaded {len(ch2o_files)} CH2O files.")
+        print(f"Downloaded {len(ch2o_files)} CH2O files.")
 
 
 def test_fetch_data_with_invalid_constituent(fetcher_instance: TEMPOFetcher):
