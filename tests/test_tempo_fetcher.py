@@ -25,7 +25,7 @@ from backend.src.data_ingestion.tempo_fetcher import TEMPOFetcher, DOWNLOAD_DIR,
 @pytest.fixture(scope="session")
 def fetcher_instance():
     """
-    Fixtrue to initialize the TEMPOFetcher once per test session.
+    Fixture to initialize the TEMPOFetcher once per test session.
     This will trigger the earthaccess login.
     
     NOTE: The constructor now calls earthaccess.login() internally, 
