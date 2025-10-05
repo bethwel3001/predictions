@@ -2,11 +2,12 @@
 Module: pandora_fetcher
 Description: Fetches atmospheric column measurements from NASA's Pandora Project
 Author: NASA Space Apps Team
-Created: October 4, 2025
+Created: October 4, 2025 (Modified for E-A-A focus)
 
 NASA's Pandora Project provides ground-based column measurements of trace gases
 including NO2, O3, HCHO, and aerosols for satellite validation.
 Website: https://pandora.gsfc.nasa.gov/
+Data Access: https://data.pandonia-global-network.org
 """
 
 import logging
@@ -15,6 +16,7 @@ from datetime import datetime
 import requests
 import ftplib
 import io
+import json # Added for continent filtering logic
 
 logger = logging.getLogger(__name__)
 
@@ -24,17 +26,11 @@ class PandoraFetcher:
     NASA Pandora Project Data Fetcher
     
     Fetches ground-based column measurements of atmospheric trace gases
-    and aerosols from the Pandora network. Pandora instruments are used
-    for validation of satellite measurements including NASA's TEMPO mission.
-    
-    Attributes:
-        base_url (str): Base URL for Pandora data access
-        ftp_host (str): FTP server for historical data
+    and aerosols from the Pandora network.
     """
     
     def __init__(self) -> None:
         """Initialize PandoraFetcher"""
-        # Pandora data access points
         self.base_url = "https://data.pandonia-global-network.org"
         self.ftp_host = "data.pandonia-global-network.org"
         self.data_products = {
@@ -45,84 +41,154 @@ class PandoraFetcher:
             'AOD': 'Aerosol Optical Depth'
         }
         
-        logger.info(f"Initialized {self.__class__.__name__}")
-    
-    def fetch_site_list(self) -> Dict[str, Any]:
-        """
-        Fetch list of active Pandora monitoring sites
+        # Define continents for easy filtering
+        self.target_continents = ['Europe', 'Africa', 'Asia']
         
+        logger.info(f"Initialized {self.__class__.__name__}")
+
+    # --- MODIFIED METHOD ---
+    def fetch_site_list(self, continent: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Fetch list of active Pandora monitoring sites, optionally filtered by continent.
+        
+        Args:
+            continent: Optional filter ('Europe', 'Africa', 'Asia').
+            
         Returns:
-            Dictionary containing site information with coordinates
+            Dictionary containing site information with coordinates.
             
         Note:
-            This returns a structured list of known Pandora sites.
-            For real-time updates, implement FTP directory listing.
+            This list is compiled from public Pandonia Global Network
+            reports and is used for demonstration/mock purposes.
         """
         try:
-            # Known Pandora sites (subset - expand with real API/FTP listing)
+            # PGN Sites focused on Europe, Africa, and Asia with coordinates
+            all_sites = [
+                # --- Europe ---
+                {
+                    'site_id': 'athens', 'name': 'Athens, Greece', 'coordinates': (37.975, 23.789),
+                    'country': 'GR', 'continent': 'Europe', 'elevation': 212, 'active': True
+                },
+                {
+                    'site_id': 'innsbruck', 'name': 'Innsbruck, Austria', 'coordinates': (47.268, 11.393),
+                    'country': 'AT', 'continent': 'Europe', 'elevation': 577, 'active': True
+                },
+                {
+                    'site_id': 'bremen', 'name': 'Bremen, Germany', 'coordinates': (53.100, 8.850),
+                    'country': 'DE', 'continent': 'Europe', 'elevation': 3, 'active': True
+                },
+                {
+                    'site_id': 'rome', 'name': 'Rome, Italy', 'coordinates': (41.815, 12.648),
+                    'country': 'IT', 'continent': 'Europe', 'elevation': 125, 'active': True
+                },
+                # --- Africa ---
+                {
+                    'site_id': 'morocco_saidia', 'name': 'Saïdia, Morocco', 'coordinates': (35.08, -2.31),
+                    'country': 'MA', 'continent': 'Africa', 'elevation': 10, 'active': True
+                },
+                # --- Asia ---
+                {
+                    'site_id': 'seoul', 'name': 'Seoul, South Korea', 'coordinates': (37.58, 127.05),
+                    'country': 'KR', 'continent': 'Asia', 'elevation': 78, 'active': True
+                },
+                {
+                    'site_id': 'beijing', 'name': 'Beijing, China', 'coordinates': (39.977, 116.381),
+                    'country': 'CN', 'continent': 'Asia', 'elevation': 31, 'active': True
+                },
+                {
+                    'site_id': 'manila', 'name': 'Manila Observatory, Philippines', 'coordinates': (14.637, 121.077),
+                    'country': 'PH', 'continent': 'Asia', 'elevation': 35, 'active': True
+                },
+                {
+                    'site_id': 'bangkok', 'name': 'Bangkok, Thailand', 'coordinates': (13.75, 100.5),
+                    'country': 'TH', 'continent': 'Asia', 'elevation': 14, 'active': True
+                },
+                {
+                    'site_id': 'seosan', 'name': 'Seosan, South Korea', 'coordinates': (36.8, 126.4),
+                    'country': 'KR', 'continent': 'Asia', 'elevation': 10, 'active': True
+                },
+                {
+                    'site_id': 'singapore', 'name': 'Singapore', 'coordinates': (1.35, 103.8),
+                    'country': 'SG', 'continent': 'Asia', 'elevation': 15, 'active': True
+                }
+            ]
+            
+            # Apply continent filter
+            if continent:
+                if continent not in self.target_continents:
+                    logger.warning(f"Invalid continent filter: {continent}. Returning all filtered sites.")
+                    sites_filtered = [s for s in all_sites if s['continent'] in self.target_continents]
+                else:
+                    sites_filtered = [s for s in all_sites if s['continent'].lower() == continent.lower()]
+            else:
+                # Default to the target continents if no specific filter is provided
+                sites_filtered = [s for s in all_sites if s['continent'] in self.target_continents]
+            
             sites = {
-                'results': [
-                    {
-                        'site_id': 'maryland',
-                        'name': 'NASA GSFC, Greenbelt, MD',
-                        'coordinates': (38.993, -76.839),
-                        'country': 'US',
-                        'elevation': 53,
-                        'active': True,
-                        'instruments': ['Pandora-2S', 'Pandora-1S']
-                    },
-                    {
-                        'site_id': 'houston',
-                        'name': 'Houston, TX',
-                        'coordinates': (29.760, -95.369),
-                        'country': 'US',
-                        'elevation': 12,
-                        'active': True,
-                        'instruments': ['Pandora-2S']
-                    },
-                    {
-                        'site_id': 'seoul',
-                        'name': 'Seoul, South Korea',
-                        'coordinates': (37.454, 126.951),
-                        'country': 'KR',
-                        'elevation': 78,
-                        'active': True,
-                        'instruments': ['Pandora-2S']
-                    },
-                    {
-                        'site_id': 'beijing',
-                        'name': 'Beijing, China',
-                        'coordinates': (39.977, 116.381),
-                        'country': 'CN',
-                        'elevation': 31,
-                        'active': True,
-                        'instruments': ['Pandora-2S']
-                    },
-                    {
-                        'site_id': 'athens',
-                        'name': 'Athens, Greece',
-                        'coordinates': (37.975, 23.789),
-                        'country': 'GR',
-                        'elevation': 212,
-                        'active': True,
-                        'instruments': ['Pandora-2S']
-                    }
-                ],
+                'results': sites_filtered,
                 '_attribution': {
-                    'source': 'NASA Pandora Project',
+                    'source': 'NASA Pandora Project (PGN)',
                     'network': 'Pandonia Global Network',
                     'url': 'https://pandora.gsfc.nasa.gov/',
                     'data_url': 'https://data.pandonia-global-network.org',
-                    'fetched_at': datetime.utcnow().isoformat()
+                    'fetched_at': datetime.utcnow().isoformat(),
+                    'data_note': 'Site coordinates are approximate/representative based on public PGN information.'
                 }
             }
             
-            logger.info(f"Retrieved {len(sites['results'])} Pandora sites")
+            logger.info(f"Retrieved {len(sites['results'])} Pandora sites (filtered for {continent if continent else 'E/A/A'})")
             return sites
             
         except Exception as e:
             logger.error(f"Error fetching Pandora site list: {e}")
             raise
+
+    # --- NEW UTILITY METHOD ---
+    def fetch_continent_data(
+        self,
+        continent: str,
+        product: str = 'NO2',
+        date: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch column measurement data for all Pandora sites in a given continent.
+        
+        Args:
+            continent: Continent to filter sites by ('Europe', 'Africa', 'Asia').
+            product: Data product (NO2, O3, HCHO, SO2, AOD).
+            date: Date for data retrieval (default: today).
+            
+        Returns:
+            List of dictionaries, each containing data for a site.
+        """
+        if continent not in self.target_continents:
+            raise ValueError(f"Continent must be one of: {self.target_continents}")
+            
+        logger.info(f"Starting batch fetch for {product} data in {continent}")
+        
+        sites_list = self.fetch_site_list(continent=continent)['results']
+        continent_data = []
+        
+        for site in sites_list:
+            site_id = site['site_id']
+            try:
+                # Fetch data for the specific site
+                data = self.fetch_site_data(site_id, product, date)
+                # Attach site metadata for completeness
+                data['site_metadata'] = {
+                    'name': site['name'],
+                    'coordinates': site['coordinates'],
+                    'country': site['country'],
+                    'continent': site['continent']
+                }
+                continent_data.append(data)
+                logger.info(f"-> Successfully fetched {product} for {site_id}")
+            except Exception as e:
+                logger.warning(f"-> Failed to fetch {product} data for {site_id}: {e}")
+                
+        logger.info(f"Batch fetch complete. Retrieved data from {len(continent_data)}/{len(sites_list)} sites.")
+        return continent_data
+
     
     def fetch_site_data(
         self,
@@ -132,18 +198,8 @@ class PandoraFetcher:
     ) -> Dict[str, Any]:
         """
         Fetch column measurement data for a specific Pandora site
-        
-        Args:
-            site_id: Pandora site identifier (e.g., 'maryland', 'houston')
-            product: Data product (NO2, O3, HCHO, SO2, AOD)
-            date: Date for data retrieval (default: today)
-            
-        Returns:
-            Dictionary containing column measurements with metadata
-            
-        Example:
-            >>> fetcher = PandoraFetcher()
-            >>> data = fetcher.fetch_site_data('maryland', 'NO2')
+        (Implementation is kept as a mock as the actual data retrieval
+        requires a complex FTP/API interaction.)
         """
         try:
             if date is None:
@@ -154,11 +210,6 @@ class PandoraFetcher:
             
             logger.info(f"Fetching Pandora {product} data for site {site_id} on {date.date()}")
             
-            # Note: This is a template. Real implementation would:
-            # 1. Connect to FTP server or HTTP API
-            # 2. Parse L2 data files (typically .txt format)
-            # 3. Extract column measurements and quality flags
-            
             # Mock data structure based on Pandora L2 format
             mock_data = {
                 'site_id': site_id,
@@ -166,7 +217,7 @@ class PandoraFetcher:
                 'product_description': self.data_products[product],
                 'date': date.date().isoformat(),
                 'measurements': self._generate_mock_column_data(product),
-                'quality_flag': 0,  # 0 = good, 1 = questionable, 2 = bad
+                'quality_flag': 0,
                 'instrument': 'Pandora-2S',
                 'data_level': 'L2',
                 '_attribution': {
@@ -178,7 +229,7 @@ class PandoraFetcher:
                 }
             }
             
-            logger.info(f"Successfully retrieved Pandora data for {site_id}")
+            logger.info(f"Successfully retrieved Pandora data for {site_id} (MOCK)")
             return mock_data
             
         except Exception as e:
@@ -192,17 +243,6 @@ class PandoraFetcher:
     ) -> Dict[str, Any]:
         """
         Fetch Pandora ground measurements for TEMPO satellite validation
-        
-        Args:
-            site_id: Pandora site identifier
-            date: Date for comparison (default: today)
-            
-        Returns:
-            Dictionary with Pandora column data formatted for TEMPO comparison
-            
-        Note:
-            This is critical for satellite-ground validation which is a
-            key requirement of the NASA Space Apps Challenge.
         """
         try:
             if date is None:
@@ -244,19 +284,12 @@ class PandoraFetcher:
     def _generate_mock_column_data(self, product: str) -> Dict[str, Any]:
         """
         Generate mock column measurement data
-        
-        Args:
-            product: Data product type
-            
-        Returns:
-            Dictionary with column measurements
         """
-        # Typical column amounts (molecules/cm²) for different gases
         column_values = {
-            'NO2': 2.5e15,  # Typical tropospheric column
-            'O3': 8.5e18,   # Total column
-            'HCHO': 5.0e15, # Tropospheric column
-            'SO2': 1.0e15,  # Background level
+            'NO2': 2.5e15,  # Typical tropospheric column (molecules/cm²)
+            'O3': 8.5e18,   # Total column (molecules/cm²)
+            'HCHO': 5.0e15, # Tropospheric column (molecules/cm²)
+            'SO2': 1.0e15,  # Background level (molecules/cm²)
             'AOD': 0.15     # Aerosol optical depth (unitless)
         }
         
@@ -277,14 +310,6 @@ class PandoraFetcher:
     ) -> List[Dict[str, Any]]:
         """
         Find Pandora sites within radius of given coordinates
-        
-        Args:
-            latitude: Latitude in degrees
-            longitude: Longitude in degrees
-            radius_km: Search radius in kilometers
-            
-        Returns:
-            List of nearby Pandora sites with distances
         """
         try:
             from math import radians, cos, sin, asin, sqrt
@@ -299,7 +324,8 @@ class PandoraFetcher:
                 km = 6371 * c
                 return km
             
-            sites_data = self.fetch_site_list()
+            # Fetch ALL sites in E/A/A
+            sites_data = self.fetch_site_list(continent=None)
             nearby_sites = []
             
             for site in sites_data['results']:
@@ -314,9 +340,33 @@ class PandoraFetcher:
             # Sort by distance
             nearby_sites.sort(key=lambda x: x['distance_km'])
             
-            logger.info(f"Found {len(nearby_sites)} Pandora sites within {radius_km}km")
+            logger.info(f"Found {len(nearby_sites)} Pandora sites within {radius_km}km (from E/A/A list)")
             return nearby_sites
             
         except Exception as e:
             logger.error(f"Error finding nearby sites: {e}")
             raise
+
+if __name__ == '__main__':
+    # Simple demonstration of the new functionality
+    logging.basicConfig(level=logging.INFO)
+    fetcher = PandoraFetcher()
+    
+    # 1. Fetch sites in Asia
+    asia_sites = fetcher.fetch_site_list(continent='Asia')
+    print("\n--- Asia Pandora Sites ---")
+    print(json.dumps(asia_sites['results'], indent=2))
+    
+    # 2. Fetch NO2 data for all European sites
+    europe_no2_data = fetcher.fetch_continent_data(continent='Europe', product='NO2')
+    print("\n--- European NO2 Data (Mock) ---")
+    for data in europe_no2_data:
+        print(f"Site: {data['site_metadata']['name']} ({data['site_id']}) - "
+              f"NO2 Column: {data['measurements']['column_amount']:.2e} {data['measurements']['unit']}")
+    
+    # 3. Find sites near a test location (e.g., Cairo, Egypt - Africa)
+    cairo_lat, cairo_lon = 30.044, 31.235
+    nearby_africa = fetcher.get_sites_near_location(cairo_lat, cairo_lon, radius_km=5000)
+    print("\n--- Sites Near Cairo (5000km radius) ---")
+    for site in nearby_africa:
+        print(f"Site: {site['name']} ({site['continent']}) - Distance: {site['distance_km']} km")
