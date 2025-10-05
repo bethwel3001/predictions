@@ -17,6 +17,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from data_ingestion.openaq_fetcher import OpenAQFetcher
 from data_ingestion.pandora_fetcher import PandoraFetcher
+from data_ingestion.tempo_fetcher import TEMPOFetcher
 from data_ingestion.data_attribution import get_attribution_manager
 
 # Configure logging
@@ -46,6 +47,8 @@ app.add_middleware(
 # Initialize data fetchers
 openaq_fetcher = OpenAQFetcher()
 pandora_fetcher = PandoraFetcher()
+# TEMPO fetcher - Earthdata credentials may be provided via environment or netrc
+tempo_fetcher = TEMPOFetcher()
 attribution_manager = get_attribution_manager()
 
 
@@ -100,7 +103,7 @@ async def get_openaq_latest(
         attribution_manager.log_usage(
             'OpenAQ',
             params,
-            {'lat': latitude, 'lon': longitude} if coordinates else None,
+            {'lat': coordinates[0], 'lon': coordinates[1]} if coordinates else None,
             len(data.get('results', []))
         )
         
@@ -299,6 +302,120 @@ async def get_usage_summary():
 # app.include_router(air_quality.router, prefix="/api/v1/air-quality")
 # app.include_router(forecasts.router, prefix="/api/v1/forecasts")
 # app.include_router(alerts.router, prefix="/api/v1/alerts")
+
+
+# ==================== TEMPO Endpoints ====================
+
+
+@app.get("/api/v1/tempo/latest")
+async def get_tempo_latest():
+    """Get latest TEMPO granules (cached)"""
+    try:
+        data = tempo_fetcher.fetch_latest()
+
+        # Log attribution usage
+        attribution_manager.log_usage('TEMPO', ['NO2', 'O3', 'HCHO'], None, len(data.get('features', [])))
+
+        return data
+
+    except RuntimeError as re:
+        logger.error(f"Runtime error fetching TEMPO latest: {re}")
+        # Service unavailable due to missing credentials or client
+        raise HTTPException(status_code=503, detail=str(re))
+    except Exception as e:
+        logger.error(f"Error fetching TEMPO latest: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/tempo/location")
+async def get_tempo_location(
+    lat: float = Query(..., description="Latitude in degrees"),
+    lon: float = Query(..., description="Longitude in degrees"),
+    radius_km: float = Query(10.0, description="Search radius in kilometers"),
+    when: Optional[str] = Query(None, description="ISO datetime to search around (UTC)")
+):
+    """Get TEMPO granules near a location"""
+    try:
+        when_dt = datetime.fromisoformat(when) if when else None
+
+        data = tempo_fetcher.fetch_by_location(lat, lon, radius_km, when_dt)
+
+        attribution_manager.log_usage('TEMPO', ['NO2', 'O3', 'HCHO'], {'lat': lat, 'lon': lon}, len(data.get('features', [])))
+
+        return data
+
+    except ValueError as ve:
+        logger.error(f"Invalid params for TEMPO location: {ve}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        logger.error(f"Runtime error fetching TEMPO by location: {re}")
+        raise HTTPException(status_code=503, detail=str(re))
+    except Exception as e:
+        logger.error(f"Error fetching TEMPO by location: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/tempo/timerange")
+async def get_tempo_timerange(
+    start: str = Query(..., description="Start ISO datetime (UTC)"),
+    end: str = Query(..., description="End ISO datetime (UTC)"),
+    min_lon: Optional[float] = Query(None),
+    min_lat: Optional[float] = Query(None),
+    max_lon: Optional[float] = Query(None),
+    max_lat: Optional[float] = Query(None)
+):
+    """Get TEMPO granules for a time range and optional bbox"""
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+
+        bbox = None
+        if all(x is not None for x in (min_lon, min_lat, max_lon, max_lat)):
+            bbox = (float(min_lon), float(min_lat), float(max_lon), float(max_lat))  # type: ignore
+
+        data = tempo_fetcher.fetch_timerange(start_dt, end_dt, bbox=bbox)
+
+        attribution_manager.log_usage('TEMPO', ['NO2', 'O3', 'HCHO'], None, len(data.get('features', [])))
+
+        return data
+
+    except ValueError as ve:
+        logger.error(f"Invalid params for TEMPO timerange: {ve}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        logger.error(f"Runtime error fetching TEMPO timerange: {re}")
+        raise HTTPException(status_code=503, detail=str(re))
+    except Exception as e:
+        logger.error(f"Error fetching TEMPO timerange: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/tempo/pollutant/{pollutant}")
+async def get_tempo_pollutant(
+    pollutant: str,
+    start: Optional[str] = Query(None, description="Start ISO datetime (UTC)"),
+    end: Optional[str] = Query(None, description="End ISO datetime (UTC)")
+):
+    """Get TEMPO data filtered by pollutant (NO2, O3, HCHO)"""
+    try:
+        start_dt = datetime.fromisoformat(start) if start else None
+        end_dt = datetime.fromisoformat(end) if end else None
+
+        data = tempo_fetcher.fetch_by_pollutant(pollutant, start=start_dt, end=end_dt)
+
+        attribution_manager.log_usage('TEMPO', [pollutant.upper()], None, len(data.get('features', [])))
+
+        return data
+
+    except ValueError as ve:
+        logger.error(f"Invalid pollutant request: {ve}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        logger.error(f"Runtime error fetching TEMPO pollutant data: {re}")
+        raise HTTPException(status_code=503, detail=str(re))
+    except Exception as e:
+        logger.error(f"Error fetching TEMPO pollutant data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
