@@ -1,4 +1,4 @@
-# NASA TEMPO Air Quality Forecasting Platform 🌍
+# NASA TEMPO Air Quality Forecasting Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -7,7 +7,7 @@
 > **NASA Space Apps Challenge 2025 Project**  
 > Forecasting air quality using TEMPO satellite data, ground sensors, and machine learning
 
-## 🚀 Quick Start (Focus: Backend API)
+## Quick Start (Focus: Backend API)
 
 ### Prerequisites
 
@@ -34,8 +34,6 @@ cd backend
 python3 src/api/main.py
 ```
 
-**That's it!** 🎉
-
 ### Access Points
 
 - **Backend API**: http://localhost:8000
@@ -55,7 +53,7 @@ curl "http://localhost:8000/api/v1/pandora/sites"
 curl "http://localhost:8000/api/v1/attribution"
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 **Focus: Backend API & Data Processing**
 
@@ -63,10 +61,10 @@ curl "http://localhost:8000/api/v1/attribution"
 predictions/
 ├── backend/                  # Python backend (CORE)
 │   └── src/
-│       ├── data_ingestion/  # ⭐ Data fetchers (OpenAQ, Pandora, TEMPO, AirNow, PurpleAir)
+│       ├── data_ingestion/  # Data fetchers (OpenAQ, Pandora, TEMPO, AirNow, PurpleAir)
 │       ├── database/        # SQLAlchemy models
 │       ├── ml_models/       # Forecasting models
-│       ├── api/             # ⭐ FastAPI endpoints (14 endpoints)
+│       ├── api/             # FastAPI endpoints (14 endpoints)
 │       ├── notifications/   # Alert system
 │       ├── pipeline/        # Data orchestration
 │       └── utils/           # Helper functions
@@ -82,7 +80,7 @@ predictions/
 └── requirements.txt         # Python dependencies
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend (Core Focus)
 
@@ -110,7 +108,7 @@ predictions/
 - **Containers**: Docker & Docker Compose
 - **Testing**: pytest
 
-## 🌳 Development Workflow
+## Development Workflow
 
 ### Branch Strategy
 See [prompt.md](prompt.md) for detailed branching strategy.
@@ -136,7 +134,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `test`: Tests
 - `chore`: Maintenance
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run Python tests
@@ -150,14 +148,51 @@ cd frontend
 npm test
 ```
 
-## 📊 Data Sources
+## Data Sources
 
 1. **NASA TEMPO**: Satellite air quality data
 2. **EPA AirNow**: Ground-based sensor network
 3. **PurpleAir**: Community air quality sensors
 4. **OpenWeather**: Meteorological data
 
-## 🤝 Contributing
+## TEMPO (NASA) — Setup & Usage
+
+To fetch real TEMPO satellite granules you must have a NASA EarthData account and the `earthaccess` client.
+
+1. Sign up for an EarthData account: https://urs.earthdata.nasa.gov/
+2. Install the earthaccess client in the backend virtual environment:
+
+```bash
+pip install earthaccess
+```
+
+3. Configure credentials: either create a `~/.netrc` entry or set the environment variables `EARTHDATA_USERNAME` and `EARTHDATA_PASSWORD`.
+
+4. Start the backend and test TEMPO endpoints (examples below).
+
+Example curl commands (replace host/port if different):
+
+```bash
+# Latest TEMPO granules (cached)
+curl "http://localhost:8000/api/v1/tempo/latest"
+
+# TEMPO granules near location
+curl "http://localhost:8000/api/v1/tempo/location?lat=38.9072&lon=-77.0369&radius_km=25"
+
+# TEMPO granules for a timerange (ISO datetimes)
+curl "\
+  'http://localhost:8000/api/v1/tempo/timerange?start=2025-10-01T00:00:00&end=2025-10-02T00:00:00'\
+"
+
+# TEMPO pollutant product (NO2, O3, HCHO)
+curl "http://localhost:8000/api/v1/tempo/pollutant/NO2?start=2025-10-01T00:00:00&end=2025-10-02T00:00:00"
+```
+
+Notes:
+- If `earthaccess` is not installed, the endpoints will raise a runtime error explaining that Earthdata credentials or the client are missing. Install via `pip install -r requirements.txt` to include `earthaccess`.
+- Attribution for TEMPO is logged automatically when endpoints are called. Use `/api/v1/attribution` to view accumulated attribution.
+
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch
@@ -165,22 +200,22 @@ npm test
 4. Push to the branch
 5. Create a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👥 Team
+## Team
 
 NASA Space Apps Challenge 2025 Team
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - NASA for TEMPO satellite data
 - EPA for AirNow API access
 - PurpleAir for sensor data
 - OpenWeather for meteorological data
 
-## 📞 Support
+## Support
 
 For questions or issues, please open an issue on GitHub.
 
