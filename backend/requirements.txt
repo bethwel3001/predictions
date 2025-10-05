@@ -12,8 +12,7 @@ certifi==2025.8.3
 charset-normalizer==3.4.3
 click==8.3.0
 colorama==0.4.6
-coverage==7.10.7
-earthaccess==0.14.0
+earthaccess==0.15.1
 fastapi==0.104.1
 frozenlist==1.7.0
 fsspec==2025.9.0
@@ -29,10 +28,10 @@ packaging==25.0
 pluggy==1.6.0
 pqdm==0.2.0
 propcache==0.3.2
-pydantic>=2.10.0
-pydantic-settings>=2.1.0
+pydantic==2.5.2
+pydantic-settings==2.1.0
+pydantic_core==2.14.5
 pytest==7.4.3
-pytest-cov==7.0.0
 python-cmr==0.13.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.0
