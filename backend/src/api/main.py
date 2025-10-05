@@ -5,15 +5,10 @@ Integrates multiple data sources: TEMPO, OpenAQ, AirNow, PurpleAir, Pandora
 """
 
 import logging
-import os
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Import data fetchers
 import sys
@@ -23,7 +18,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 from data_ingestion.openaq_fetcher import OpenAQFetcher
 from data_ingestion.pandora_fetcher import PandoraFetcher
 from data_ingestion.data_attribution import get_attribution_manager
-from api.african_cities import get_all_african_cities, get_city_by_name, get_cities_summary
 
 # Configure logging
 logging.basicConfig(
@@ -50,8 +44,7 @@ app.add_middleware(
 )
 
 # Initialize data fetchers
-openaq_api_key = os.getenv("OPENAQ_API_KEY")
-openaq_fetcher = OpenAQFetcher(api_key=openaq_api_key)
+openaq_fetcher = OpenAQFetcher()
 pandora_fetcher = PandoraFetcher()
 attribution_manager = get_attribution_manager()
 
@@ -298,64 +291,6 @@ async def get_usage_summary():
         return attribution_manager.get_usage_summary()
     except Exception as e:
         logger.error(f"Error getting usage summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==================== African Cities Endpoints ====================
-
-@app.get("/api/v1/african-cities")
-async def get_african_cities():
-    """
-    Get air quality data for all African cities with available data
-    
-    Returns real data from CSV files in backend/src/data folder:
-    - Kigali, Rwanda
-    - Nairobi, Kenya
-    - Kampala, Uganda
-    - Addis Ababa, Ethiopia
-    - Nakuru, Kenya
-    """
-    try:
-        cities = get_all_african_cities()
-        return {
-            "count": len(cities),
-            "cities": cities
-        }
-    except Exception as e:
-        logger.error(f"Error fetching African cities data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/v1/african-cities/summary")
-async def get_african_cities_summary():
-    """Get summary statistics for all African cities"""
-    try:
-        summary = get_cities_summary()
-        return summary
-    except Exception as e:
-        logger.error(f"Error fetching African cities summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/v1/african-cities/{city_name}")
-async def get_african_city(city_name: str):
-    """
-    Get detailed air quality data for a specific African city
-    
-    Available cities: Kigali, Nairobi, Kampala, Addis Ababa, Nakuru
-    """
-    try:
-        city_data = get_city_by_name(city_name)
-        if city_data is None:
-            raise HTTPException(
-                status_code=404, 
-                detail=f"City '{city_name}' not found. Available cities: Kigali, Nairobi, Kampala, Addis Ababa, Nakuru"
-            )
-        return city_data
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching data for {city_name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -28,9 +28,9 @@ packaging==25.0
 pluggy==1.6.0
 pqdm==0.2.0
 propcache==0.3.2
-pydantic==2.10.5
+pydantic==2.5.2
 pydantic-settings==2.1.0
-pydantic_core==2.27.2
+pydantic_core==2.14.5
 pytest==7.4.3
 python-cmr==0.13.0
 python-dateutil==2.9.0.post0
