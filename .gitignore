@@ -27,6 +27,8 @@ venv/
 env/
 ENV/
 .venv
+myenv
+virtualEnv
 
 # Node.js
 node_modules/
@@ -108,3 +110,5 @@ htmlcov/
 *.bak
 *.swp
 *~
+#Tempo_data
+tempo_data_downloads
