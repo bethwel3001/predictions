@@ -1,12 +1,76 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="light">
   <head>
+    <!-- Basic meta tags -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>predictions</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- SEO -->
+    <title>Predictor - Air Quality Predictions & Insights</title>
+    <meta
+      name="description"
+      content="Real-time air quality predictions, historical trends, and personalized recommendations based on your current location."
+    />
+    <meta
+      name="keywords"
+      content="air quality, environment, pollution, AQI, forecast, air prediction, weather, health"
+    />
+    <meta name="author" content="" />
+
+    <!-- Open Graph (Facebook, LinkedIn, etc.) -->
+    <meta property="og:title" content="Air Quality Predictions & Insights" />
+    <meta
+      property="og:description"
+      content="Get live air quality updates and predictions tailored to your location."
+    />
+    <meta property="og:image" content="" />
+    <meta property="og:url" content="" />
+    <meta property="og:type" content="" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Air Quality Predictions & Insights" />
+    <meta
+      name="twitter:description"
+      content="Monitor air quality and get personalized environmental health recommendations."
+    />
+    <meta name="twitter:image" content="/preview.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="https://imgs.search.brave.com/wGi0ZIQpRsQJbzXDaABg3noZKdnkt_eAVdo4XsSc8aM/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTY5/OTExNjA4Ni9waG90/by9hc3Ryb25hdXQt/dmVudHVyZXMtaW50/by1zcGFjZS1vbi1h/LWRhcmluZy1yb2Nr/ZXQtcmlkZS5qcGc_/cz02MTJ4NjEyJnc9/MCZrPTIwJmM9ajdq/eFZ6ZVNGbEVpb1Jx/S0NtbzhBczlIMFI5/RUh3cWJHX19JNDd0/dVFWND0" />
+    <link rel="apple-touch-icon" href="" />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Optional: Theme color for mobile browsers -->
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Structured data (JSON-LD for SEO) -->
+    <script type="application/ld+json">
+      {
+        "@context": "",
+        "@type": "WebApplication",
+        "name": "Air Quality Predictions",
+        "url": "",
+        "description": "Real-time air quality predictions and environmental recommendations based on your location.",
+        "applicationCategory": "EnvironmentApplication",
+        "operatingSystem": "Web",
+        "author": {
+          "@type": "",
+          "name": ""
+        }
+      }
+    </script>
   </head>
-  <body class="antialiased">
+
+  <body
+    class="antialiased font-inter bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+  >
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -14,14 +14,114 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// =============================================================================
+// BACKEND API CONFIGURATION
+// =============================================================================
 // UPDATE THESE FOR PRODUCTION
 const CONFIG = {
+  // Base URL for all API endpoints - update this to your backend server
   API_BASE: "http://localhost:8000/api",
   APP_NAME: "Predictors",
   MAX_AQI_THRESHOLD: 200,
   GEOLOCATION_TIMEOUT: 8000,
   REQUEST_TIMEOUT: 10000
 };
+
+// =============================================================================
+// EXPECTED BACKEND API ENDPOINT STRUCTURES
+// =============================================================================
+
+/*
+// ENDPOINT 1: Get Air Quality Data by Coordinates
+// URL: GET /api/airquality?lat={latitude}&lon={longitude}
+// Expected Response Format:
+{
+  "city": "New York",
+  "aqi": 45,
+  "coordinates": {
+    "lat": 40.7128,
+    "lon": -74.0060
+  },
+  "timestamp": "2025-01-15T10:30:00Z",
+  "pollutants": {
+    "pm2_5": 12.5,
+    "pm10": 23.1,
+    "no2": 18.7,
+    "o3": 45.2,
+    "so2": 5.1,
+    "co": 0.8
+  },
+  "recent": [42, 44, 46, 43, 45] // Last 5 hours AQI values
+}
+
+// ENDPOINT 2: Get Air Quality Data by City Name
+// URL: GET /api/airquality?city={cityName}
+// Expected Response Format: Same as above
+
+// ENDPOINT 3: Get Nearby Areas
+// URL: GET /api/nearby?lat={latitude}&lon={longitude}&radius={radiusInKm}
+// Expected Response Format:
+[
+  {
+    "name": "Brooklyn",
+    "aqi": 48,
+    "safe": true,
+    "distance": 8.5
+  },
+  {
+    "name": "Queens", 
+    "aqi": 52,
+    "safe": true,
+    "distance": 12.3
+  },
+  {
+    "name": "Jersey City",
+    "aqi": 65,
+    "safe": true,
+    "distance": 6.7
+  }
+]
+
+// ENDPOINT 4: Get AQI Forecast (Optional Enhancement)
+// URL: GET /api/forecast?lat={lat}&lon={lon}&days=3
+// Expected Response Format:
+{
+  "city": "New York",
+  "forecast": [
+    {
+      "date": "2025-01-15",
+      "aqi": 45,
+      "status": "Good",
+      "pollutants": { ... }
+    },
+    {
+      "date": "2025-01-16", 
+      "aqi": 68,
+      "status": "Moderate",
+      "pollutants": { ... }
+    }
+  ]
+}
+
+// ENDPOINT 5: Get Historical Data (Optional Enhancement)  
+// URL: GET /api/history?lat={lat}&lon={lon}&days=7
+// Expected Response Format:
+{
+  "city": "New York",
+  "historical": [
+    {
+      "date": "2025-01-08",
+      "aqi": 42,
+      "dominant_pollutant": "pm2_5"
+    },
+    // ... more days
+  ]
+}
+*/
+
+// =============================================================================
+// AQI CONSTANTS AND UTILITIES
+// =============================================================================
 
 // AQI Constants
 const AQI_THRESHOLDS = {
@@ -106,6 +206,10 @@ const getAQIBgColor = (aqi) => {
 const isSevereAQI = (aqi) => {
   return aqi > AQI_THRESHOLDS.UNHEALTHY;
 };
+
+// =============================================================================
+// UI COMPONENTS
+// =============================================================================
 
 // Hero Loading Overlay Component
 const HeroLoadingOverlay = ({ message = "Loading air quality data..." }) => {
@@ -269,6 +373,10 @@ const ErrorDisplay = ({ error, onRetry, onDismiss }) => {
   );
 };
 
+// =============================================================================
+// MAIN APP COMPONENT WITH BACKEND INTEGRATION
+// =============================================================================
+
 // Main App Component
 function App() {
   const [locationInput, setLocationInput] = useState("");
@@ -366,9 +474,15 @@ function App() {
     }
   };
 
+  // =============================================================================
+  // BACKEND API INTEGRATION POINTS
+  // =============================================================================
+
   // BACKEND INTEGRATION: Fetch air quality data by coordinates
+  // This function calls: GET /api/airquality?lat={latitude}&lon={longitude}
   const fetchDataByCoords = async (lat, lon) => {
     try {
+      // API CALL 1: Get main air quality data
       const { data } = await axios.get(`${CONFIG.API_BASE}/airquality`, {
         params: { lat, lon },
         timeout: CONFIG.REQUEST_TIMEOUT
@@ -379,6 +493,7 @@ function App() {
 
       handleSevereAlert(data.aqi);
 
+      // API CALL 2: Get nearby areas data (optional - can be commented out if not implemented)
       try {
         const nearbyResponse = await axios.get(`${CONFIG.API_BASE}/nearby`, {
           params: { lat, lon, radius: 50 },
@@ -389,6 +504,19 @@ function App() {
         console.warn('Failed to fetch nearby areas:', nearbyErr.message);
         setNearbyAreas([]);
       }
+
+      // POTENTIAL ENHANCEMENT: Uncomment to add forecast data
+      /*
+      try {
+        const forecastResponse = await axios.get(`${CONFIG.API_BASE}/forecast`, {
+          params: { lat, lon, days: 3 }
+        });
+        // setForecastData(forecastResponse.data);
+      } catch (forecastErr) {
+        console.warn('Forecast data not available:', forecastErr.message);
+      }
+      */
+
     } catch (err) {
       const errorMessage = err.response?.data?.message || 
                           err.code === 'ECONNABORTED' ? 
@@ -419,6 +547,7 @@ function App() {
   };
 
   // BACKEND INTEGRATION: Fetch air quality data by city name
+  // This function calls: GET /api/airquality?city={cityName}
   const handleFetchByCity = async (isRefresh = false) => {
     if (!validateCityName(locationInput)) {
       setError("Please enter a valid city name");
@@ -433,6 +562,7 @@ function App() {
     try {
       const sanitizedCity = sanitizeInput(locationInput);
       
+      // API CALL: Get air quality data by city name
       const { data } = await axios.get(`${CONFIG.API_BASE}/airquality`, {
         params: { city: sanitizedCity },
         timeout: CONFIG.REQUEST_TIMEOUT
