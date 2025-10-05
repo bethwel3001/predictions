@@ -12,6 +12,9 @@ pydantic-settings==2.1.0
 # API & HTTP
 requests==2.31.0
 
+# NASA Earthdata client (compatible published version)
+earthaccess==0.15.1
+
 # Development Tools
 pytest==7.4.3
 
