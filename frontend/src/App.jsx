@@ -17,6 +17,7 @@ import "react-toastify/dist/ReactToastify.css";
 // UPDATE THESE FOR PRODUCTION
 const CONFIG = {
   // Base URL for all API endpoints 
+  // This will include API documentation and usage, model usage
   API_BASE: "http://localhost:8000/api",
   APP_NAME: "Predictors",
   MAX_AQI_THRESHOLD: 200,
