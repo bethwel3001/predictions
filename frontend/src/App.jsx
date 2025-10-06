@@ -14,22 +14,16 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// =============================================================================
-// BACKEND API CONFIGURATION
-// =============================================================================
 // UPDATE THESE FOR PRODUCTION
 const CONFIG = {
-  // Base URL for all API endpoints - update this to your backend server
+  // Base URL for all API endpoints 
+  // This will include API documentation and usage, model usage
   API_BASE: "http://localhost:8000/api",
   APP_NAME: "Predictors",
   MAX_AQI_THRESHOLD: 200,
   GEOLOCATION_TIMEOUT: 8000,
   REQUEST_TIMEOUT: 10000
 };
-
-// =============================================================================
-// EXPECTED BACKEND API ENDPOINT STRUCTURES
-// =============================================================================
 
 /*
 // ENDPOINT 1: Get Air Quality Data by Coordinates
@@ -119,10 +113,6 @@ const CONFIG = {
 }
 */
 
-// =============================================================================
-// AQI CONSTANTS AND UTILITIES
-// =============================================================================
-
 // AQI Constants
 const AQI_THRESHOLDS = {
   GOOD: 50,
@@ -206,10 +196,6 @@ const getAQIBgColor = (aqi) => {
 const isSevereAQI = (aqi) => {
   return aqi > AQI_THRESHOLDS.UNHEALTHY;
 };
-
-// =============================================================================
-// UI COMPONENTS
-// =============================================================================
 
 // Hero Loading Overlay Component
 const HeroLoadingOverlay = ({ message = "Loading air quality data..." }) => {
@@ -373,10 +359,6 @@ const ErrorDisplay = ({ error, onRetry, onDismiss }) => {
   );
 };
 
-// =============================================================================
-// MAIN APP COMPONENT WITH BACKEND INTEGRATION
-// =============================================================================
-
 // Main App Component
 function App() {
   const [locationInput, setLocationInput] = useState("");
@@ -473,10 +455,6 @@ function App() {
       setInitialLoading(false);
     }
   };
-
-  // =============================================================================
-  // BACKEND API INTEGRATION POINTS
-  // =============================================================================
 
   // BACKEND INTEGRATION: Fetch air quality data by coordinates
   // This function calls: GET /api/airquality?lat={latitude}&lon={longitude}
@@ -898,8 +876,8 @@ function App() {
         {/* FOOTER */}
         <footer className="w-full mt-auto py-4 text-center text-xs text-gray-400">
           <div className="max-w-6xl mx-auto px-4">
-            <p>© 2025 {CONFIG.APP_NAME} — NASA Space Apps Challenge</p>
-            <p className="mt-0.5">Real-time air quality predictions and monitoring</p>
+            <p>© 2025 {CONFIG.APP_NAME} — The NASA Space Apps Challenge 2025</p>
+            <p className="mt-0.5">Real-time air quality predictions and monitoring tool.</p>
           </div>
         </footer>
       </div>
